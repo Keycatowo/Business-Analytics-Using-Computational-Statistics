@@ -72,7 +72,7 @@ add_ci_segment <- function(ci95_low, ci95_high, ci99_low, ci99_high,
 }
 ```
 ##### 繪圖結果：
-![visualize_sample_ci_1](img\visualize_sample_ci_1.png)
+![visualize_sample_ci_1](img/visualize_sample_ci_1.png)
 
 ### 繪圖
 
