@@ -5,14 +5,16 @@
 ## 重點整理(統計)
 ##### 已知$\sigma$樣本估計母體平均
 + Z dist
-+ $\mu\approx\bar{x}\pm z_{\alpha/2}\frac {\sigma}{\sqrt n}$
++ <!-- $\mu\approx\bar{x}\pm z_{\alpha/2}\frac {\sigma}{\sqrt n}$ --> <img style="transform: translateY(0.1em); background: white;" src="https://render.githubusercontent.com/render/math?math=%5Cmu%5Capprox%5Cbar%7Bx%7D%5Cpm%20z_%7B%5Calpha%2F2%7D%5Cfrac%20%7B%5Csigma%7D%7B%5Csqrt%20n%7D">
+
+
 ##### 估計母體標準差
 + Chi-Square dist
 + 左右不等長，故需分開計算
-  + $LCL=\frac{(n-1)s^2}{\chi^2_{n-1,\alpha/2}}$  
-  + $UCL=\frac{(n-1)s^2}{\chi^2_{n-1,1-\alpha/2}}$  
+  + <!-- $LCL=\frac{(n-1)s^2}{\chi^2_{n-1,\alpha/2}}$ --> <img style="transform: translateY(0.1em); background: white;" src="https://render.githubusercontent.com/render/math?math=LCL%3D%5Cfrac%7B(n-1)s%5E2%7D%7B%5Cchi%5E2_%7Bn-1%2C%5Calpha%2F2%7D%7D">
+  + <!-- $UCL=\frac{(n-1)s^2}{\chi^2_{n-1,1-\alpha/2}}$ --> <img style="transform: translateY(0.1em); background: white;" src="https://render.githubusercontent.com/render/math?math=UCL%3D%5Cfrac%7B(n-1)s%5E2%7D%7B%5Cchi%5E2_%7Bn-1%2C1-%5Calpha%2F2%7D%7D">  
 ##### 有限母體標準偏差修正
-+ $\sigma_{\bar {x}}=\sqrt{\frac{N-n}{N-1}}\frac{\sigma}{\sqrt{n}}$
++ <!-- $\sigma_{\bar {x}}=\sqrt{\frac{N-n}{N-1}}\frac{\sigma}{\sqrt{n}}$ --> <img style="transform: translateY(0.1em); background: white;" src="https://render.githubusercontent.com/render/math?math=%5Csigma_%7B%5Cbar%20%7Bx%7D%7D%3D%5Csqrt%7B%5Cfrac%7BN-n%7D%7BN-1%7D%7D%5Cfrac%7B%5Csigma%7D%7B%5Csqrt%7Bn%7D%7D">
 
 ## 重點整理(程式)
 
