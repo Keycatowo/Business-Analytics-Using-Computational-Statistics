@@ -1,0 +1,50 @@
+---
+title: "HW5_106022103"
+author: '106022103'
+date: "2021/3/24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Question 1) 
+> Some years ago, [a Google engineer explained how they spot malicious apps (malware)](https://android-developers.googleblog.com/2017/01/findingmalware.html) that made it to their Android mobile apps store. Some malware apps deliberately turn off a security feature called Verify as soon as they are installed on an Android device. But there are also other, non-malicious, reasons why Verify might get turned off. So Google computes a “DOI score” for each app. The distribution of DOI scores is binomial, which Google approximates as a normal distribution (recall our reading on binomial distributions).
+
+### a
+> Given the critical DOI score that Google uses to detect malicious apps (-3.7), what is the probability that a randomly chosen app from Google’s app store will turn off the Verify security feature? (report a precise decimal fraction, not a percentage)
+
+
+### b
+> Assuming there were [~2.2 million apps](https://www.statista.com/statistics/263795/number-of-available-apps-in-the-apple-app-store/) when the article was written, what number of apps on the Play Store did Google expect would maliciously turn off the Verify feature once installed?
+
+
+
+
+
+## Question 2) This week’s data is real but the scenario is imaginary
+> The large American phone company Verizon has a monopoly on phone services in many areas of the US. The New York Public Utilities Commission (PUC) regularly monitors repair times with customers in New York to verify the quality of Verizon’s services. Verizon claims that they take 7.6 minutes to repair phone services for its customers on average. The file verizon.csv has a recent sample of repair times collected by PUC, who seeks to verify this claim at 99% confidence.
+
+### a. The Null distribution of t-values:
+#### i. Visualize the distribution of Verizon’s repair times, marking the mean with a vertical line
+#### ii. Given what PUC wishes to test, how would you write the hypothesis? (not graded)
+#### iii. Estimate the population mean, and the 99% confidence interval (CI) of this estimate
+#### iv. Using the traditional statistical testing methods we saw in class, find the t-statistic and p-value of the test
+#### v. Briefly describe how these values relate to the Null distribution of t (not graded)
+#### vi. What is your conclusion about the advertising claim from this t-statistic, and why?
+
+
+### b. Let’s use bootstrapping on the sample data to examine this problem:
+#### i. Bootstrapped Percentile: Estimate the bootstrapped 99% CI of the mean
+#### ii. Bootstrapped Difference of Means: 
+> What is the 99% CI of the bootstrapped difference between the population mean and the hypothesized mean?
+
+#### iii. Bootstrapped t-Interval: 
+> What is 99% CI of the bootstrapped t-statistic?
+
+#### iv. Plot separate distributions of all three bootstraps above
+> (for ii and iii make sure to include zero on the x-axis)  
+
+### c. Do the four methods (traditional test, bootstrapped percentile, bootstrapped difference of means, bootstrapped t-Interval) agree with each other on the test?
