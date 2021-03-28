@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-+ Helped by: `106070038`
++ Helped by: `106070038`, `106022113`
 
 ## Set up 
 
@@ -160,7 +160,7 @@ boot_mean <- function(sample0, mean_hyp) {
   resample <- sample(sample0, length(sample0), replace=TRUE)
   return( mean(resample) )
 }
-means <- replicate(num_boots, boot_mean(sample0=verizon$Time, mean_hyp=mean(verizon$Time)))
+means <- replicate(num_boots, boot_mean(sample0=verizon$Time, mean_hyp=7.6))
 means_CI <- quantile(means, probs = c(0.005, 0.995))
 sprintf("The CI of means under 0.99 confidence level is (%.3f,%.3f)", 
         means_CI[1], means_CI[2])
@@ -176,7 +176,7 @@ boot_mean_diff <- function(sample0, mean_hyp) {
   return( mean(resample) - mean_hyp )
 }
 mean_diffs <- replicate(num_boots, boot_mean_diff(sample0=verizon$Time, 
-                                                  mean_hyp=mean(verizon$Time)))
+                                                  mean_hyp=7.6))
 mean_diffs_CI <- quantile(mean_diffs, probs = c(0.005, 0.995))
 sprintf("The CI of difference of means under 0.99 confidence level is (%.3f,%.3f)", 
         mean_diffs_CI[1], mean_diffs_CI[2])
@@ -195,7 +195,7 @@ boot_t_stat <- function(sample0, mean_hyp) {
   return( diff / se )
 }
 t_stats <- replicate(num_boots, boot_t_stat(sample0=verizon$Time, 
-                                            mean_hyp=mean(verizon$Time)))
+                                            mean_hyp=7.6))
 t_stats_CI <- quantile(t_stats, probs = c(0.005, 0.995))
 sprintf("The CI of t-statistic under 0.99 confidence level is (%.3f,%.3f)", 
         t_stats_CI[1], t_stats_CI[2])
@@ -235,4 +235,4 @@ All four methods agree with each other.
 + [Calculating p Values](https://www.cyclismo.org/tutorial/R/pValues.html)
 + [t-tests](https://www.statmethods.net/stats/ttest.html)
 + [How to add mean, and mode to ggplot histogram?](https://stackoverflow.com/questions/47000494/how-to-add-mean-and-mode-to-ggplot-histogram)
-+ 
++ [Interval Estimate(Single population)](https://github.com/Keycatowo/Business-Analytics-Using-Computational-Statistics/blob/main/HW5/img/Interval%20Estimate(Single%20population).png)

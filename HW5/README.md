@@ -22,7 +22,11 @@
 ## 失敗記錄(有空再嘗試)
 ### 雙y軸
 這次原本有想要嘗試用ggplot的雙y軸，但是嘗試了很多次之後發現都還是沒有辦法很成功
-
+#### 相關資料
++ https://www.jamleecute.com/dual-y-axis-plotting-%E9%9B%99y%E8%BB%B8-%E7%B9%AA%E5%9C%96-ggplot2/
++ https://blog.csdn.net/yuanzhoulvpi/article/details/106134084?utm_medium=distribute.pc_relevant.none-task-blog-baidujs_title-5&spm=1001.2101.3001.4242
++ https://blog.csdn.net/kMD8d5R/article/details/81713813
++ https://blog.csdn.net/Bone_ACE/article/details/47427453
 ### 配色方案
 原本看到`ggthemr`套件可以用來自動設定ggplot的配色  
 但是好像原作者後來沒有在維護了  
