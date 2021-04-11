@@ -1,0 +1,146 @@
+---
+title: "HW6_106022103"
+author: '106022103'
+date: "2021/4/11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up 
+
+### import libary
+```{r}
+library(ggplot2)
+```
+
+## Question 1
+> Recall the example from last week’s HW about Verizon’s customer response times. You might have noted that each response time was labeled as ILEC or CLEC in the ‘Group’ column of that data file. Here is the full story. Verizon was an Incumbent Local Exchange Carrier (ILEC), responsible for maintaining land-line phone service in certain areas. Other competing providers, termed Competitive Local Exchange Carriers (CLEC), could also sell long-distance phone services in Verizon’s areas. When something went wrong, Verizon would be responsible to respond and repair services as quickly for CLEC long-distance customers as for its own ILEC customers. The New York Public Utilities Commission (PUC) monitored fairness by comparing Verizon’s response times for its ILEC customers versus CLEC customers. In each case, a hypothesis test was performed at the 1% significance level, to determine whether response times for CLEC customers were significantly slower than for Verizon’s customers. If Verizon failed to provide fair treatment for CLEC customers, then Verizon would pay large penalties.
+
+> Verizon claims that mean response time for ILEC and CLEC customers are the same, but the PUC would like to test if CLEC customers were facing greater response times.
+
+### (a) Visualize
+> Visualize Verizon’s response times for ILEC vs. CLEC customers
+
+
+### (b) t-test using `t.text()`
+> Use the appropriate form of the `t.test()` function to test the difference between the mean of ILEC sample response times versus the mean of CLEC sample response times. From the output of `t.test()`:
+
+
+#### i. 
+> What are the appropriate null and alternative hypotheses in this case?
+
+
+#### ii. 
+> Based on output of the t.test(), would you reject the null hypothesis or not?
+
+
+### (c) Boostrapping
+> Let’s try this using bootstrapping: Estimate bootstrapped null and alternative values of t by using the same `t.test()` function to compare: bootstrapped samples of ILEC against bootstrapped samples of CLEC (alt t-values);  and bootstrapped samples of ILEC against the original ILEC sample (null t-values).
+
+#### i. 
+> Plot a distribution of the bootstrapped null t-values and alternative t-values, adding vertical lines to show the 5% rejection zone of the null distribution (use the same one-vs-two tail logic as 1b).
+
+
+
+
+#### ii. 
+> Based on these bootstrapped results, should we reject the null hypothesis?
+
+
+## Question 2
+> We also wish to test whether the variance of ILEC response times is different than the variance of CLEC response times.
+
+
+### (a) null and alternative hypotheses
+> What is the null and alternative hypotheses in this case? 
+(Start by identifying which group likely has the higher variance from the sample data at hand)
+
+
+
+### (b) traditional statistic
+> Let’s try traditional statistical methods first:
+
+#### i.
+> What is the F-statistic of the ratio of variances?
+
+
+#### ii.
+> What is the cut-off value of F, such that we want to reject the 5% most extreme F-values?
+Use the `qf()` function in R to determine the cutoff.
+
+
+#### iii.
+> Can we reject the null hypothesis?
+
+
+
+### (c) boostrapping
+
+#### i. 
+> Create bootstrapped values of the F-statistic, **for both null and alternative hypotheses**.
+
+#### ii. 
+> What is the 95% cutoff value according to the bootstrapped null values of F?
+
+#### iii. 
+> Plot a visualization of the null and alternative distributions of the bootstrapped F-statistic, with vertical lines at the cutoff value of F nulls.
+
+#### iv.
+> What do the bootstrap results suggest about the null hypothesis?
+
+## Question 3
+> Let’s try to see when we should use the non-parametric bootstrap and when we might be better off with traditional statistical approaches.
+
+
+### (a)
+> Let’s create a function to see if key statistics/assumptions of normality are met in our distributions. We will do it by comparing the distributions of our values to a perfect normal distribution.   
+The ellipses (...) in the steps below indicate where you should write your own code.
+
+> Make a function called `norm_qq_plot()` that takes a set of values):  
+`norm_qq_plot <- function(values) { … }`  
+Within the function body, create zix lines of code as follows.
+
+
+#### i.
+> Create a sequence of probability numbers from 0 to 1, with ~1000 probabilities in between
+  `probs1000 <- seq(0, 1, 0.001)`
+
+#### ii.
+> Calculate ~1000 quantiles of our values (you can use probs=probs1000), and name it `q_vals`  
+  `q_vals <- quantile(…)`
+
+#### iii.
+> Calculate ~1000 quantiles of a perfectly normal distribution with the same mean and standard deviation as our values; name this vector of normal quantiles `q_norm`  
+  `q_norm <- qnorm(…)`
+
+#### iv.
+> Create a scatterplot comparing the quantiles of a normal distribution versus quantiles of `values`
+  `plot(q_norm, q_vals, xlab="normal quantiles", ylab="values quantiles")`
+
+#### v.
+> Finally, draw a red line with intercept of 0 and slope of 1, comparing these two sets of quantiles
+  `abline( … , col="red", lwd=2)`
+  
+> You have now created a function that draws a “normal quantile-quantile plot” or Normal Q-Q plot
+(please show code for the whole function in your HW report)
+
+
+### (b)
+> Confirm that your function works by running it against the values of our d123 distribution from week 3 and checking that it looks like the plot on the right:
+
+> Interpret the plot you produced ([see this article on how to interpret normal Q-Q plots](https://seankross.com/2016/02/29/A-Q-Q-Plot-Dissection-Kit.html)) and tell us if it suggests whether d123 is normally distributed or not.
+
+### (c)
+> We generally don’t need to use bootstrapping for hypothesis tests of the mean (t-tests) if the null distribution of the t-statistic follows a normal distribution (traditional statistics measures would work fine). Use your normal Q-Q plot function to check if the bootstrapped distribution of null t-values in question 1c was normally distributed. What’s your conclusion?
+
+
+#### (d)
+> Hypothesis tests of variances (f-tests) assume the two samples we are comparing come from normally distributed populations. Use your normal Q-Q plot function to check if the two samples we compared in question 2 could have been normally distributed. What’s your conclusion?
+
+
+
+
+
