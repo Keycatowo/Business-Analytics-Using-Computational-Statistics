@@ -30,3 +30,12 @@
 + [Week9](https://github.com/Keycatowo/Business-Analytics-Using-Computational-Statistics/tree/main/HW9)
   + Type1 vs Type2 error
   + R互動式繪圖——Manipulate
+
+
+## 閱讀方式
++ 以週為單位
++ 基本包含`.Rmd`和`.pdf`檔案
++ 如有適用到資料會放置於改週之`data/`資料夾底下
+
+##### 筆記位置
+![](img/筆記位置.gif)
