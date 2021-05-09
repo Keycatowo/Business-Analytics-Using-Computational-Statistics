@@ -1,0 +1,384 @@
+---
+title: "HW11"
+author: '106022103'
+date: "2021/5/8"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assist
++ `106000199`
+  + Helped me how to get factor names in data.frame.
+  + Disscussed about the Q2.a, which visualization should take.
+  
+  
+  
+## Set up 
+
+### import libary
+
+```{r import, message=FALSE, warning=FALSE}
+library(ggplot2)
+require(qqplotr)
+library(plyr)
+library(gridExtra)
+library(ggcorrplot)
+library(magrittr)
+library(ggpubr)
+```
+
+## Q1
+
+### (a) Let’s dig into what regression is doing to compute model fit
+
+Because `interactive_regression` can't run in Rmarkdown knit, we have to run these commands in console and save the variables `pts`.
+
+
+```r
+pts <- interactive_regression() 
+saveRDS(pts, file = "W:/Rtmp/pts.rds")
+```
+
+#### i. Plot Scenario 2, storing the returned points: `pts <- interactive_regression_rsq()`
+
+```{r}
+pts <- readRDS(file = "W:/Rtmp/pts1.rds")
+```
+
+
+
+#### ii. Run a linear model of x and y points to confirm the R2 value reported by the simulation:
+
+```{r}
+regr <- lm(y ~ x, data=pts)
+summary(regr)
+```
+
+#### iii. Add line segments to the plot to show the regression residuals (errors) as follows:  
+
++ Get values of y( regression line’s estimates of y, given x): y_hat <- regr$fitted.values  
++ Add segments: segments(pts$x, pts$y, pts$x, y_hat, col="red", lty="dotted")  
+
+```{r}
+pts_regr <- lm(y~x, data=pts)
+y_hat <- pts_regr$fitted.values
+
+plot(pts)
+abline(pts_regr)
+segments(pts$x, pts$y, pts$x, y_hat, col="red", lty="dotted")
+```
+
+
+
+
+
+#### iv. Use only pts$x, pts$y, y_hat and mean(pts$y) to compute SSE, SSR and SST, and verify R2 
+
+```{r}
+SSE <- sum((pts$y-y_hat)^2)
+SSR <- sum((y_hat-mean(pts$y))^2)
+SST <-  SSE + SSR
+R2 <- SSR/SST
+cat(sprintf("SSE\tSSR\tSST\tR^2\n%.2f\t%.2f\t%.2f\t%.2f\n", SSE, SSR, SST, R2))
+```
+
+### (b) Comparing scenarios 1 and 2, which do we expect to have a stronger $R^2$ ?
+
+**ANSWER:** scenarios 1.
+
+
+### (c) Comparing scenarios 3 and 4, which do we expect to have a stronger $R^2$ ?
+
+**ANSWER:** scenarios 3.
+
+### (d) Comparing scenarios 1 and 2, which do we expect has bigger/smaller SSE, SSR, and SST?
+
+> (do not compute SSE/SSR/SST here – just provide your intuition)
+ 
+**ANSWER:** scenarios 2.
+
+
+### (e) Comparing scenarios 3 and 4, which do we expect has bigger/smaller SSE, SSR, and SST?
+
+> (do not compute SSE/SSR/SST here – just provide your intuition)
+
+**ANSWER:** scenarios 4.
+
+
+
+
+
+
+
+
+## Q2
+
+### Read File
+
+```{r read file}
+auto <- read.table("data/auto-data.txt", header=FALSE, na.strings = "?")
+names(auto) <- c("mpg", "cylinders", "displacement", "horsepower", "weight", 
+                 "acceleration", "model_year", "origin", "car_name")
+```
+
+
+### (a) data explore
+
+
+#### i.  Visualize the data in any way
+
+##### Preprocess
+```{r}
+cylinder_freq <- as.data.frame(table(auto$cylinders))
+origin_freq <- as.data.frame(table(auto$origin))
+year_freq <- as.data.frame(table(auto$model_year))
+
+names(cylinder_freq) <- c("cylinder","Freq")
+names(origin_freq) <- c("origin","Freq")
+names(year_freq) <- c("model_year","Freq")
+
+sum(is.na(auto)) # How many na values
+auto <- auto[complete.cases(auto), ] # remove missing value
+
+auto[,'origin']<-factor(auto[,'origin']) # convert to factor
+auto[,'car_name']<-factor(auto[,'car_name']) # convert to factor
+
+auto_value <- auto[,-8:-9] # drop the class data
+corr <- round(cor(auto_value), 2)
+p.mat <- cor_pmat(auto_value)
+```
+
+Since there are no so many missing values, so I decided to just remove them.
+
+##### Pie Chart  
+
+```{r}
+p1 <- ggplot(data=cylinder_freq) +
+    geom_bar(aes(x=factor(1),
+                 y=Freq,
+                 fill=cylinder),
+             stat = "identity") +
+    coord_polar("y", start=0) + 
+    scale_fill_brewer(palette="Blues") +
+    theme_void() # remove background
+
+p2 <- ggplot(data=origin_freq) +
+    geom_bar(aes(x=factor(1),
+                 y=Freq,
+                 fill=origin),
+             stat = "identity") +
+    coord_polar("y", start=0) + 
+    scale_fill_brewer(palette="Dark2") +
+    theme_void() # remove background
+
+p3 <- ggplot(data=year_freq) +
+    geom_bar(aes(x=factor(1),
+                 y=Freq,
+                 fill=model_year),
+             stat = "identity") +
+    coord_polar("y", start=0) + 
+    scale_fill_grey() +
+    theme_void() # remove background
+
+grid.arrange(p1,p2,p3,nrow=1,ncol=3)
+```
+
+
+
+
+##### Violin plot  
+  
+```{r}
+p4 <- ggplot(auto, aes(x=origin, y=displacement, color=origin)) + 
+  geom_violin() + 
+  coord_flip() + 
+  theme(legend.position="none")
+
+p5 <- ggplot(auto, aes(x=origin, y=horsepower, color=origin)) + 
+  geom_violin() + 
+  coord_flip() + 
+  theme(legend.position="none")
+
+p6 <- ggplot(auto, aes(x=origin, y=weight, color=origin)) + 
+  geom_violin() + 
+  coord_flip() + 
+  theme(legend.position="none")
+
+p7 <- ggplot(auto, aes(x=origin, y=acceleration, color=origin)) + 
+  geom_violin() + 
+  coord_flip() + 
+  theme(legend.position="none")
+
+p8 <- ggplot(auto, aes(x=origin, y=model_year, color=origin)) + 
+  geom_violin() + 
+  coord_flip() + 
+  theme(legend.position="none")
+
+
+
+grid.arrange(p4,p5,p6,p7,p8, nrow=1,ncol=5)
+```
+
+#### ii. Report a correlation table of all variables
+
+###### Corr matrix
+
+```{r}
+ggcorrplot(corr, hc.order = TRUE,
+           type = "lower", p.mat = p.mat, lab = TRUE)
+```
+
+
+
+#### iii. which variables seem to relate to mpg?
+
+**ANSWER:** Take $0.7$ as the threshold value, `mpg` is related to `displacement`, `cylinders`, `weight`, `horsepower`.
+
+
+#### iv. Which relationships might not be linear?
+```{r}
+# ref.7
+# 將相關係數與p-value矩陣轉換成data frame的函數
+flattenCorrMatrix <- function(cormat) {
+  ut <- upper.tri(cormat) # Lower and Upper Triangular Part of a Matrix
+  data.frame(
+    var1 = rownames(cormat)[row(cormat)[ut]],
+    var2 = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut]
+  )
+}
+cor_table <- flattenCorrMatrix(corr)
+```
+
+
+
+
+**ANSWER:** Take $0.5$ as the threshold value, the following relationships may not be linear:
+
+```{r}
+cor_table %>% dplyr::filter(abs(cor) < 0.5)
+```
+Take $0.3$ as the threshold value, the following relationships may not be linear:
+
+```{r}
+cor_table %>% dplyr::filter(abs(cor) < 0.3)
+```
+
+
+#### v. Are there any pairs of independent variables that are highly correlated (r > 0.7)?
+
+**ANSWER:** The following relationships are highly correlated:
+
+```{r}
+cor_table %>% dplyr::filter(abs(cor) >0.7)
+```
+
+
+
+### (b) linear regression model
+
+```{r}
+regr_all <- lm(mpg~., data = auto_value)
+summary(regr_all)
+```
+#### i. Which independent variables have a ‘significant’ relationship with mpg at 1% significance?
+
+**ANSWER:**  The `weight`, `model_year` have a ‘significant’ relationship with mpg at 1% significance.
+
+#### ii. Is it possible to determine which independent variables are the most effective at increasing mpg? If so, which ones, and if not, why not? (hint: units!)  
+
+**ANSWER:** It seems `weight`, `model_year` are the most effective variables at increasing `mpg`.
+
+
+
+### (c)
+
+
+#### i. Create fully standardized regression results: are these slopes easier to compare?
+
+
+```{r}
+auto_value_std <- data.frame(scale(auto_value))
+auto_value_std$origin <-auto$origin
+regr_std <- lm(mpg~., data = auto_value_std)
+summary(regr_std)
+```
+**ANSWER:** The `origin` should not be standardize, and the slope are easier to compare with each other.  
+
+#### ii. Regress mpg over each nonsignificant independent variable, individually. Which ones become significant when we regress mpg over them individually?
+
+
+```{r}
+regr_cylinders <- lm(mpg ~ cylinders, data = auto_value_std)
+regr_horsepower <- lm(mpg ~ horsepower, data = auto_value_std)
+regr_acceleration <- lm(mpg ~ acceleration, data = auto_value_std)
+summary(regr_cylinders)
+summary(regr_horsepower)
+summary(regr_acceleration)
+```
+
+**ANSWER:** When we regress `mpg` over each `cylinders`, `horsepower` and `acceleration`, individually, all nonsignificant independent variable become **significant**!
+
+#### iii. Plot the density of the residuals: are they normally distributed and centered around zero?
+
+```{r}
+# The function to plot qqplot
+norm_qq_ggplot <- function(values){
+  text <- substitute(values)
+  df <- data.frame(value=values)
+  gg <- ggplot(data = df, mapping = aes(sample = value)) +
+      stat_qq_band() +
+      stat_qq_line() +
+      stat_qq_point() +
+      labs(x = "Theoretical Quantiles", y = "Sample Quantiles", title = "QQplot")
+  gg
+}
+
+
+density_hist_plot <- function(values){
+  p <- ggplot(mapping = aes(values)) +
+    geom_histogram(mapping = aes(y = stat(density))) +
+    geom_density(color = "red", size = 1) +
+    labs(title = "density plot")
+  p
+}
+
+# combine two plots
+density_qq_plot <- function(values){
+  text <- substitute(values)
+  p1 <- norm_qq_ggplot(values)
+  p2 <- density_hist_plot(values)
+  figure <- ggarrange(p1,p2)
+  annotate_figure(figure,top = text_grob(text, color = "red", face = "bold", size = 14))
+  # grid.arrange(p1,p2, nrow=1,ncol=2)
+}
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+density_qq_plot(regr_all$residuals)
+density_qq_plot(regr_std$residuals)
+density_qq_plot(regr_cylinders$residuals)
+density_qq_plot(regr_horsepower$residuals)
+density_qq_plot(regr_acceleration$residuals)
+```
+
+**ANSWER:** All residuals are normally distributed and centered around zero.
+
+## Reference Link
+
++ [Counting the number of elements with the values of x in a vector](https://stackoverflow.com/questions/1923273/counting-the-number-of-elements-with-the-values-of-x-in-a-vector)
++ [R visulize](https://bookdown.org/jefflinmd38/r4biost/dataviz.html)
++ [Visualization of a correlation matrix using ggplot2](http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2)
++ [Impute Missing Value](https://rpubs.com/skydome20/R-Note10-Missing_Value)
++ [How to convert integer to factor in R?](https://stackoverflow.com/questions/31165015/how-to-convert-integer-to-factor-in-r/31165259)
++ [ggplot2 violin plot](http://www.sthda.com/english/wiki/ggplot2-violin-plot-quick-start-guide-r-software-and-data-visualization#change-the-legend-position)
++ [Regularized Regression](https://www.jamleecute.com/regularized-regression-ridge-lasso-elastic/)
++ [ggplot2 - Easy Way to Mix Multiple Graphs on The Same Page](http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/)
++ [Extract variable names from list or vector in R](https://stackoverflow.com/questions/42227416/extract-variable-names-from-list-or-vector-in-r)
