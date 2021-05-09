@@ -64,6 +64,32 @@ p
 + > 這種畫法比較不優美，但比較直觀就是分別畫每一張圖
 
 
+### QQplot
+
+#### 內建繪圖
+```
+norm_qq_plot <- function(values){
+  probs1000 <- seq(0, 1, 0.001)
+  q_vals <- quantile(values, probs = probs1000)
+  q_norm <- qnorm(probs1000, mean = mean(values), sd = sd(values))
+  plot(q_norm, q_vals, xlab="normal quantiles", ylab="values quantiles")
+  abline( a = 0, b = 1 , col="red", lwd=2)
+}
+```
+
+#### 使用ggplot
+```R
+
+norm_qq_ggplot <- function(values){
+  df <- data.frame(value=values)
+  gg <- ggplot(data = df, mapping = aes(sample = value)) +
+      stat_qq_band() +
+      stat_qq_line() +
+      stat_qq_point() +
+      labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+  gg
+}
+```
 
 
 ## Reference
