@@ -1,0 +1,202 @@
+---
+title: "HW13"
+author: '106022103'
+date: "2021/5/22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE, warning = FALSE)
+```
+
+
+## Assist
++ `106000199`
+  + Discussion about the interaction.
+
+## Set up
+
+### import libary
+
+```{r import}
+library(ggplot2)
+require(qqplotr)
+library(plyr)
+library(gridExtra)
+library(ggcorrplot)
+library(magrittr)
+library(ggpubr)
+library(car)
+```
+
+### Read file
+
+```{r}
+cars <- read.table("data/auto-data.txt", header=FALSE, na.strings = "?")
+names(cars) <- c("mpg", "cylinders", "displacement", "horsepower", "weight", 
+                 "acceleration", "model_year", "origin", "car_name")
+cars <- cars[complete.cases(cars), ] # remove missing value
+cars[,'origin']<-factor(cars[,'origin']) # convert to factor
+cars[,'car_name']<-factor(cars[,'car_name']) # convert to factor
+cars_value <- cars[,-9] # drop the class data
+cars_log <- with(cars_value, data.frame(log(mpg), log(cylinders), log(displacement), log(horsepower), log(weight), log(acceleration), model_year, origin))
+```
+
+
+## Q1 Let’s visualize how weight and acceleration are related to mpg.
+
+### a.	Let’s visualize how weight might moderate the relationship between acceleration and mpg:
+
+#### i. Create two subsets of your data, one for light-weight cars (less than mean weight) 
+and one for heavy cars (higher than the mean weight)
+
+```{r}
+weight_mean <- mean(cars$weight)
+weight_mean_log <- mean(cars_log$log.weight.)
+light_weight_cars <- cars[cars$weight<weight_mean,]
+heavy_weight_cars <- cars[cars$weight>weight_mean,]
+light_weight_cars_log <- cars_log[cars_log$log.weight. < weight_mean_log,]
+heavy_weight_cars_log <- cars_log[cars_log$log.weight. > weight_mean_log,]
+```
+
+
+
+```{r}
+cars$Group <- "No"
+cars[cars$weight > weight_mean,]$Group = "heavy"
+cars[cars$weight < weight_mean,]$Group = "light"
+
+cars_log$Group <- "No"
+cars_log[cars_log$log.weight. > weight_mean_log,]$Group = "heavy"
+cars_log[cars_log$log.weight. < weight_mean_log,]$Group = "light"
+```
+
+
+
+#### ii.~iii.	Create a single **scatter plot** of `acceleration` vs. `mpg`, with different colors and/or shapes for light versus heavy cars  
+  
+##### origin scale   
+
+```{r}
+p <- ggplot(data = cars, mapping = aes(x=acceleration, y=mpg,color=Group)) + 
+    geom_point(size = 0.5,alpha=0.5) +
+    geom_smooth(method=lm)+
+    labs(title = paste("Scatter plot of","mpg-acceleration"))
+p
+```
+
+##### log scale    
+
+```{r}
+p <- ggplot(data = cars_log, mapping = aes(x=log.acceleration., y=log.mpg., color=Group)) + 
+    geom_point(size = 0.5,alpha=0.5) +
+    geom_smooth(method=lm)+
+    labs(title = paste("Scatter plot of","mpg(log)-acceleration(log)"))
+p
+```   
+   
+
+
+### b.	Report the full summaries of two separate regressions for light and heavy cars where
+ log.mpg. is dependent on log.weight., log.acceleration., model_year and origin
+ 
+```{r}
+summary(lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + origin,  data = light_weight_cars_log))
+summary(lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + origin,  data = heavy_weight_cars_log))
+```
+
+
+
+### c.	(not graded) Using your intuition only: What do you observe about light versus heavy cars so far?
+
+**ANSWER:**  Lighter cars often have higher `mpg` at the same `acceleration` level.
+
+
+## Q2 Using the fully transformed dataset from above (cars_log), to test whether we have moderation.
+
+### a.	(not graded) Between weight and acceleration ability, use your intuition and experience to state which variable might be a moderating versus independent variable, in affecting mileage.
+
+**ANSWER:** I think `acceleration` might be a moderating versus independent variable, in affecting `mpg`.  
+
+
+### b.	Use various regression models to model the possible moderation on log.mpg.
+
+#### i. Report a regression without any interaction terms
+```{r}
+regr_all <- lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + factor(origin),
+                data = cars_log)
+summary(regr_all)
+```
+
+#### ii. Report a regression with a raw interaction between weight and acceleration
+
+```{r}
+regr_weight_acc <- lm(log.mpg. ~ log.weight. + log.acceleration. + log.weight.*log.acceleration.+
+                        model_year + origin, data = cars_log)
+summary(regr_weight_acc)
+```
+
+#### iii. Report a regression with a mean-centered interaction term
+
+```{r}
+mc_log_weight <- scale(cars_log$log.weight., center = TRUE, scale = FALSE)
+mc_log_acc <- scale(cars_log$log.acceleration., center = TRUE, scale = FALSE)
+mc_log_mpg <- scale(cars_log$log.mpg., center = TRUE, scale = FALSE)
+summary(lm(mc_log_mpg ~ mc_log_acc + mc_log_weight + mc_log_acc * mc_log_weight+ model_year + origin, data=cars_log))
+```
+
+
+#### iv. Report a regression with an orthogonalized interaction term
+```{r}
+inter <- cars_log$log.weight. * cars_log$log.acceleration.
+inter_regr <- lm(inter ~ cars_log$log.weight. + cars_log$log.acceleration.)
+cor(inter_regr$residuals, cars_log$log.weight.)
+cor(inter_regr$residuals, cars_log$log.acceleration.)
+summary(lm(data = cars_log, log.mpg. ~ log.weight. + log.acceleration. + inter_regr$residuals+ model_year + origin))
+```
+
+### c.	For each of the interaction term strategies above (raw, mean-centered, orthogonalized) what is the correlation between that interaction term and the two variables that you multiplied together?
+
+```{r}
+# raw
+inter_1 <- cars_log$log.weight. * cars_log$log.acceleration.
+cor_raw <- round(cor(cbind(inter_1, cars_log$log.weight., cars_log$log.acceleration.)),2)
+p.raw_mat <- cor_pmat(cor(cbind(inter_1, cars_log$log.weight., cars_log$log.acceleration.)))
+colnames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+rownames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+colnames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+rownames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+ggcorrplot(t(cor_raw), hc.order = TRUE,
+  type = "full", p.mat = t(p.raw_mat), lab = TRUE,lab_size = 8)
+```
+
+
+```{r}
+# mean-centered
+inter_2 <- mc_log_weight * mc_log_acc
+cor_raw <- round(cor(cbind(inter_2, mc_log_weight, mc_log_acc)),2)
+p.raw_mat <- cor_pmat(cor(cbind(inter_2, mc_log_weight, mc_log_acc)))
+colnames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+rownames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+colnames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+rownames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+ggcorrplot(t(cor_raw), hc.order = TRUE,
+  type = "full", p.mat = t(p.raw_mat), lab = TRUE,lab_size = 8)
+```
+```{r}
+# orthogonalized
+inter_3 <- inter_regr$residuals
+cor_raw <- round(cor(cbind(inter_3, cars_log$log.weight., cars_log$log.acceleration.)),2)
+p.raw_mat <- cor_pmat(cor(cbind(inter_3, cars_log$log.weight., cars_log$log.acceleration.)))
+colnames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+rownames(cor_raw) <-  c("inter", "log_weight", "log_acc")
+colnames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+rownames(p.raw_mat) <-  c("inter", "log_weight", "log_acc")
+ggcorrplot(t(cor_raw), hc.order = TRUE,
+  type = "full", p.mat = t(p.raw_mat), lab = TRUE,lab_size = 8)
+```
+
+
+## Reference Link
++ [ggplot2 scatter plots](http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization)
++ [Multi-collinearity, Variance Inflationand Orthogonalization in Regression](https://www.creative-wisdom.com/computer/sas/collinear_orthogonalization.htm)
