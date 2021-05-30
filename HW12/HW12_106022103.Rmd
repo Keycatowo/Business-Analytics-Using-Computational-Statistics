@@ -1,0 +1,309 @@
+---
+title: "HW12"
+author: '106022103'
+date: "2021/5/15"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assist
++ `106000199`
+  + Remind me using GVIF to do the VIF operation.
+  + How to fix the plot BUG in Q3.a
+  
+  
+## Set up
+
+### import libary
+
+```{r import, message=FALSE, warning=FALSE}
+library(ggplot2)
+require(qqplotr)
+library(plyr)
+library(gridExtra)
+library(ggcorrplot)
+library(magrittr)
+library(ggpubr)
+library(car)
+```
+
+### Read file
+
+```{r}
+cars <- read.table("data/auto-data.txt", header=FALSE, na.strings = "?")
+names(cars) <- c("mpg", "cylinders", "displacement", "horsepower", "weight", 
+                 "acceleration", "model_year", "origin", "car_name")
+cars <- cars[complete.cases(cars), ] # remove missing value
+cars[,'origin']<-factor(cars[,'origin']) # convert to factor
+cars[,'car_name']<-factor(cars[,'car_name']) # convert to factor
+cars_value <- cars[,-9] # drop the class data
+cars_log <- with(cars_value, data.frame(log(mpg), log(cylinders), log(displacement), log(horsepower), log(weight), log(acceleration), model_year, origin))
+
+corr <- round(cor(cars_value[,-8]), 2)
+p.mat <- cor_pmat(cars_value[,-8])
+
+log.corr <- round(cor(cars_log[,-8]), 2)
+log.p.mat <- cor_pmat(cars_log[,-8])
+```
+
+
+# Q1.  
+
+
+### a. Run a new regression on the `cars_log` dataset, with `mpg.log`. dependent on all other variables    
+
+#### i. Which log-transformed factors have a significant effect on log.mpg. at 10% significance?  
+
+
+
+
+
+```{r}
+regr_log <- lm(log.mpg.~., data = cars_log)
+summary(regr_log)
+```
+  
+**ANSWER:** `log.horsepower.`, `log.weight.`, `log.acceleration.`, `model_year` and `origin` have a significant effect on log.mpg. at 10% significance.
+
+
+
+#### ii.	Do some new factors now have effects on mpg, and why might this be?  
+
+```{r}
+summary(lm(mpg~., data = cars_value))
+```
+**ANSWER:** Compared two results, `horsepower` and `acceleration` will have effects after we take the log operation. The reason may be because  `lm()` can only respond to linear relationships. Other non-linear relationships do not obtain a very high level of significance.  
+
+#### iii.	Which factors still have insignificant or opposite (from correlation) effects on mpg? 
+Why might this be?  
+
+
+```{r}
+ggcorrplot(log.corr, hc.order = TRUE,
+  type = "lower", p.mat = log.p.mat, lab = TRUE)
+```
+
+
+```{r}
+ggcorrplot(corr, hc.order = TRUE,
+  type = "lower", p.mat = p.mat, lab = TRUE)
+```
+
+
+**ANSWER:** The `acceleration` still has insignificant effects on `mpg`, and it probably because this factor has not so much relation  with mpg. The `displacement`,`cylinders`, `weight`, `horsepower` has still opposite effects on `mpg`, and either linear or logarithmic may have opposite relationships.
+
+
+### b. Let’s take a closer look at weight, because it seems to be a major explanation of mpg  
+  
+#### i. Create a regression (call it regr_wt) of mpg on weight from the original cars dataset  
+
+```{r}
+regr_wt <- lm(mpg~weight, data = cars)
+summary(regr_wt)
+```
+
+
+#### ii. Create a regression (call it regr_wt_log) of log.mpg. on log.weight. from cars_log  
+
+```{r}
+regr_wt_log <- lm(log.mpg.~log.weight., data = cars_log)
+summary(regr_wt_log)
+```
+
+
+#### iii. Visualize the residuals of both regression models (raw and log-transformed):
+
+```{r}
+density_hist_plot <- function(values,title=""){
+  p <- ggplot(mapping = aes(values)) +
+    geom_histogram(mapping = aes(y = stat(density))) +
+    geom_density(color = "red", size = 1) +
+    labs(title = paste("Density plot of",title))
+  p
+}
+
+scatter_plot <- function(x, y, title = ""){
+  p <- ggplot(mapping = aes(x=x, y=y)) + 
+    geom_point(color = "red", size = 1) +
+    geom_smooth() +
+    labs(title = paste("Scatter plot of",title))
+  p
+
+}
+
+
+# combine two plots
+density_qq_plot <- function(values){
+  text <- substitute(values)
+  p1 <- norm_qq_ggplot(values)
+  p2 <- density_hist_plot(values)
+  figure <- ggarrange(p1,p2)
+  annotate_figure(figure,top = text_grob(text, color = "red", face = "bold", size = 14))
+  # grid.arrange(p1,p2, nrow=1,ncol=2)
+}
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+p1 <- density_hist_plot(regr_wt$residuals,"residuals (raw)")
+p2 <- scatter_plot(cars$weight, resid(regr_wt),"residuals (raw)")
+ggarrange(p1,p2)
+p3 <- density_hist_plot(regr_wt_log$residuals,"residuals (log)")
+p4 <- scatter_plot(cars_log$log.weight., resid(regr_wt_log),"residuals (log)")
+ggarrange(p3,p4)
+```
+
+
+
+#### iv. which regression produces better residuals for the assumptions of regression?  
+
+**ANSWER:** From the results above, the log regression seems has better regression.  
+
+#### v. How would you interpret the slope of log.weight. vs log.mpg. in simple words?
+
+```{r}
+regr_wt_log$coefficients[2]
+```
+
+**ANSWER:**  It means each 1% change in `log.weight.` leads to $-1.05\%$ change in `log.mpg.`.  
+
+### c.  
+
+#### i.
+
+```{r}
+# Empty plot canvas
+plot(log(cars$horsepower), log(cars$mpg), col=NA, pch=19)
+# Function for single resampled regression line
+boot_regr <- function(model, dataset) {
+boot_index <- sample(1:nrow(dataset), replace=TRUE)
+data_boot <- dataset[boot_index,]
+regr_boot <- lm(model, data=data_boot)
+abline(regr_boot, lwd=1, col=rgb(0.7, 0.7, 0.7, 0.5))
+regr_boot$coefficients
+}
+# Bootstrapping for confidence interval
+coeffs <- replicate(300, boot_regr(log(mpg) ~ log(horsepower), cars))
+# Plot points and regression line
+points(log(cars$horsepower), log(cars$mpg), col="blue", pch=19)
+abline(a=mean(coeffs["(Intercept)",]), 
+b=mean(coeffs["log(horsepower)",]), lwd=2)
+# Confidence interval values
+quantile(coeffs["log(horsepower)",], c(0.025, 0.975))
+```
+
+
+#### ii.
+
+```{r}
+hp_regr_log <- lm(log(mpg) ~ log(horsepower), cars)
+confint(hp_regr_log)
+```
+
+**ANSWER:**  The two results are same.
+
+
+
+## Q2 Let’s tackle multicollinearity next. Consider the regression model:  
+
+```{r}
+regr_log <- lm(log.mpg. ~ log.cylinders. + log.displacement. + log.horsepower. +
+                          log.weight. + log.acceleration. + model_year +
+                          factor(origin),  data=cars_log)
+
+```
+
+### a.	Using regression and R2, compute the VIF of log.weight. using the approach shown in class    
+
+```{r}
+r2_weight <- summary(regr_wt_log)$r.squared
+vif_weight <- 1 / (1 - r2_weight)
+sqrt(vif_weight)
+```
+
+
+### b. Stepwise VIF Selection
+
+```{r}
+vif(lm(log.mpg. ~ log.cylinders. + log.displacement. + log.horsepower. +
+                          log.weight. + log.acceleration. + model_year +
+                          factor(origin),  data=cars_log)) 
+vif(lm(log.mpg. ~ log.cylinders.  + log.horsepower. +
+                          log.weight. + log.acceleration. + model_year +
+                          factor(origin),  data=cars_log)) 
+vif(lm(log.mpg. ~ log.cylinders.   +
+                          log.weight. + log.acceleration. + model_year +
+                          factor(origin),  data=cars_log)) 
+vif(lm(log.mpg. ~         log.weight. + log.acceleration. + model_year +
+                          factor(origin),  data=cars_log)) 
+```
+
+**ANSWER:** The `log.displacement.`, `log.horsepower.`, `log.cylinders.` are removed in order.
+
+
+### c. Using stepwise VIF selection, have we lost any variables that were previously significant?  
+
+```{r}
+regr_log_vif <- lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + factor(origin),  data=cars_log)
+e1 <- summary(regr_log_vif)$r.squared
+regr_log=lm(log.mpg.~.,data=cars_log)
+e2 <- summary(regr_log)$r.squared
+sprintf("There are %.4f explanation loss in VIF ", (e2-e1))
+```
+### d. From only the formula for VIF, try deducing/deriving the following:
+
+#### i.	If an independent variable has no correlation with other independent variables, what would its VIF score be? 
+
+**ANSWER:** The VIF of any independent variable should be 1.
+
+#### ii.	Given a regression with only two independent variables (X1 and X2), how correlated would X1 and X2 have to be, to get VIF scores of 5 or higher? To get VIF scores of 10 or higher?  
+  
+**ANSWER:**  
+
++ Since $VIF_j=\frac{1}{1-R_j^2}$  
+  + $VIF_j=5\to R_j^2=0.8$
+  + $VIF_j=10\to R_j^2=0.9$
+
+
+## Q3 Might the relationship of weight on mpg be different for cars from different origins? 
+
+### a. 
+
+```{r}
+origin_pch = c(1,2,4)
+origin_colors = c("blue", "darkgreen", "red")
+with(cars_log, plot(log.weight., log.mpg., pch=origin_pch[origin], col=origin_colors[origin],))
+
+cars_us <- subset(cars_log, origin==1)
+wt_regr_us <- lm(log.mpg. ~ log.weight., data=cars_us)
+abline(wt_regr_us, col=origin_colors[1], lwd=2)
+
+cars_eu <- subset(cars_log, origin==2)
+wt_regr_eu <- lm(log.mpg. ~ log.weight., data=cars_eu)
+abline(wt_regr_eu, col=origin_colors[2], lwd=2)
+
+cars_jp <- subset(cars_log, origin==3)
+wt_regr_jp <- lm(log.mpg. ~ log.weight., data=cars_jp)
+abline(wt_regr_jp, col=origin_colors[3], lwd=2)
+
+legend("bottomleft", legend = c("US", "EU", "JP"),
+ pch = origin_pch,
+ col = origin_colors, text.col = origin_colors)
+```
+
+### b.(not graded)Do cars from different origins appear to have different weight vs. mpg relationships?
+
+**ANSWER:** Different regions have different relationships with cars, and the U.S. is more different to Japan and Europe.
+
+
+## Reference Link
++ [ggplot2 scatter plots](http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization)
++ [Concatenate Strings in R](https://www.tutorialkart.com/r-tutorial/concatenate-two-or-more-strings-in-r/)
++ [Variance inflation factor](https://en.wikipedia.org/wiki/Variance_inflation_factor)
++ [R visulize](https://bookdown.org/jefflinmd38/r4biost/dataviz.html)
++ [Visualization of a correlation matrix using ggplot2](http://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2)
+
+
