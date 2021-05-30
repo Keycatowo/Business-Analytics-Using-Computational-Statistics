@@ -1,0 +1,215 @@
+---
+title: "HW14"
+author: '106022103'
+date: "2021/5/29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE, warning = FALSE)
+```
+
+## Assist
++ `106000199`
+  + Discussion about the PCA.
+  + Bootstrap function.
+
+## Set up
+
+### import libary
+
+```{r import}
+library(ggplot2)
+require(qqplotr)
+library(plyr)
+library(gridExtra)
+library(ggcorrplot)
+library(magrittr)
+library(ggpubr)
+library(car)
+library(corrplot)
+library(openxlsx) # install.packages("openxlsx")
+library(psycho) #install.packages("psycho")
+```
+
+
+## Q1
+
+### Read file
+
+```{r}
+cars <- read.table("data/auto-data.txt", header=FALSE, na.strings = "?")
+names(cars) <- c("mpg", "cylinders", "displacement", "horsepower", "weight", 
+                 "acceleration", "model_year", "origin", "car_name")
+cars[,'origin']<-factor(cars[,'origin']) # convert to factor
+cars_log <- with(cars, data.frame(log(mpg), log(cylinders), log(displacement), log(horsepower), log(weight), log(acceleration), model_year, origin))
+cars_log <- cars_log[complete.cases(cars_log), ] # remove missing value
+cars_log_keep <- cars_log[,c("log.mpg.", "log.weight.", "log.cylinders.", "log.acceleration.", "model_year", "origin")]
+```
+
+### a. 
+
+#### i.	Model 1: Regress `log.weight.` over `log.cylinders.` only and report the coefficient  
+ 
+```{r}
+model1 <- lm(log.weight. ~ log.cylinders.,  data = cars_log)
+summary(model1)
+```
+#### ii.	Model 2: Regress `log.mpg.` over `log.weight.` and all control variables and report the coefficient (check whether weight has a significant direct effect on mpg with other variables statistically controlled?)
+
+```{r}
+model2 <- lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + origin,  data = cars_log)
+summary(model2)
+```
+
+### b.	What is the indirect effect of cylinders on mpg? (use the product of slopes between model 1 & 2)
+
+```{r}
+sprintf("The indrect effect of cylinders on mpg is %.4f",
+        (model1$coefficients["log.cylinders."] * model2$coefficients["log.weight."]))
+```
+
+### c.	Let’s bootstrap for the confidence interval of the indirect effect of cylinders on mpg
+
+```{r}
+boot_indirect <- function(df){
+  df_boot <- df[sample(nrow(df),nrow(df),replace=TRUE),]
+  model1 <- model1 <- lm(log.weight. ~ log.cylinders.,  data = df_boot)
+  model2 <- lm(log.mpg. ~ log.weight. + log.acceleration. + model_year + origin,  data = df_boot)
+  return (model1$coefficients["log.cylinders."] * model2$coefficients["log.weight."])
+}
+
+indirect_boots <- replicate(2000, boot_indirect(cars_log))
+quantile(indirect_boots, probs = c(0.025, 0.975))
+``` 
+
+
+
+## Q2 
+
+### a. Let’s analyze the principal components of the four collinear variables
+
+#### i. Create a new data.frame of the four log-transformed variables with high multicollinearity
+
+```{r}
+cars_log_colinear <- cars_log[,c("log.cylinders.","log.displacement.","log.horsepower.","log.weight.")]
+cor_m <- cor(cars_log_colinear)
+
+cor_raw <- round(cor_m,2)
+p.raw_mat <- cor_pmat(cor_m)
+ggcorrplot(t(cor_raw), hc.order = TRUE,
+  type = "lower", p.mat = t(p.raw_mat), lab = TRUE,lab_size = 8)
+```
+
+#### ii. How much variance of the four variables is explained by their first principal component?
+
+```{r}
+eigenvalue <- eigen(cor_m)$values
+eigenvectors <- eigen(cor_m)$vectors
+
+# compute from eigenvalues
+eigenvalue / sum(eigenvalue)
+
+# check with summary of pca
+pca <- prcomp(cars_log_colinear,scale. = T)
+summary(pca)
+```
+
+
+#### iii. Looking at the values and valence (positive/negative) of the first principal component’s eigenvector, what would you call the information captured by this component?
+
+**ANSWER:** Because of the high co-linearity between the four variables, the value of the first principal component is higher and all components are positive.
+
+
+### b. Let’s revisit our regression analysis on cars_log:
+
+#### i. Store the scores of the first principal component as a new column of cars_log
+
+```{r}
+cars_log$pc1 <- pca$x[,1]
+```
+
+
+#### ii. Regress mpg over the the column with PC1 scores (replaces cylinders, displacement, horsepower, and weight), as well as acceleration, model_year and origin
+
+```{r}
+model3 <- lm(log.mpg. ~ pc1 + log.acceleration. + model_year + origin,  data = cars_log)
+summary(model3)
+```
+#### iii. Try running the regression again over the same independent variables, but this time with everything standardized. How important is this new column relative to other columns?
+
+```{r}
+cars_log_std <- cars_log[-9]
+cars_log_colinear_std <- scale(cars_log_colinear)
+cars_log_std[,names(cars_log_colinear)] <- cars_log_colinear_std
+pca_std <- prcomp(cars_log_colinear_std,scale. = T)
+cars_log_std$pc1_std <- pca_std$x[,1]
+model4 <- lm(log.mpg. ~ pc1_std + log.acceleration. + model_year + origin,  data = cars_log_std)
+summary(model4)
+```
+**ANSWER:**  The importance are same.
+
+
+## Q3 
+
+### Read File
+
+```{r}
+data <- read.xlsx(xlsxFile="data/security_questions.xlsx", sheet = 2, colNames = TRUE)
+```
+
+### a. How much variance did each extracted factor explain?
+
+```{r}
+summary(prcomp(data,scale. = T))
+```
+
+### b. How many dimensions would you retain, according to the criteria we discussed?
+
+```{r}
+# Use built-in plot
+screeplot(prcomp(data,scale.=TRUE),type = "line",main = "Scree plot")
+
+# use ggplot
+res.pca = prcomp(log2(data[,-ncol(data)]+1))
+varExp = (100*res.pca$sdev^2)/sum(res.pca$sdev^2)
+varDF = data.frame(Dimensions=1:length(varExp),
+                   varExp=varExp)
+
+ggplot(varDF,aes(x=Dimensions,y=varExp)) + geom_point() + 
+  geom_col(fill="steelblue") + geom_line() + 
+  theme_bw() + scale_x_continuous(breaks=1:nrow(varDF)) + 
+  ylim(c(0,100)) + ylab("Perc variance explained")
+```
+
+```{r}
+eigenvalues <- eigen(cor(data))$values
+sprintf("We should retain %d dimensions ", length(eigenvalues[eigenvalues>1]))
+```
+
+### c. (ungraded) Can you interpret what any of the principal components mean? Try guessing the meaning of the first two or three PCs looking at the PC-vs-variable matrix
+
+```{r}
+library(patchwork)
+library(ggfortify)
+autoplot(res.pca,data=data)
+```
+
+
+
+```{r}
+print("The components of PC1")
+eigen(cor(data))$vectors[,1]
+print("The components of PC2")
+eigen(cor(data))$vectors[,2]
+print("The components of PC3")
+eigen(cor(data))$vectors[,3]
+```
+**ANSWER:** From the composition of PC1 looks like the average of all the problems, PC2 looks like the opposite of Q4,Q11,Q17, PC3 looks like the opposite of Q5,Q10.
+
+## Reference Link
++ [Read .xlsx file in R](https://www.delftstack.com/zh-tw/howto/r/read-xlsx-in-r/)
++ [How to set scree plot scale as same as principal components?](https://stackoverflow.com/questions/60957020/how-to-set-scree-plot-scale-as-same-as-principal-components)
++ [How To Make Scree Plot in R with ggplot2?](https://datavizpyr.com/how-to-make-scree-plot-in-r-with-ggplot2/)
++ [Sample random rows in dataframe](https://stackoverflow.com/questions/8273313/sample-random-rows-in-dataframe)
++ [standardize.data.frame: Standardize (scale and reduce) Dataframe.](https://www.rdocumentation.org/packages/psycho/versions/0.4.91/topics/standardize.data.frame)
