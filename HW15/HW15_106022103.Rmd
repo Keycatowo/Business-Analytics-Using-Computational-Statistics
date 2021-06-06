@@ -1,0 +1,158 @@
+---
+title: "HW15"
+author: '106022103'
+date: "2021/6/5"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE, warning = FALSE)
+```
+
+### import libary
+```{r}
+library(openxlsx) # read.xlsx()
+library(ggplot2) 
+library(psych) # principal() 
+library(factoextra) # fviz_pca_biplot()
+```
+
+
+
+## Q1 parallel analysis
+
+### Read File
+
+```{r}
+data <- read.xlsx(xlsxFile="data/security_questions.xlsx", sheet = 2, colNames = TRUE)
+```
+
+### (a) Show a single visualization with scree plot of data, scree plot of simulated noise, and a horizontal line showing the eigenvalue = 1 cutoff.
+
+```{r}
+sim_noise_ev <- function(n, p) {
+noise <- data.frame(replicate(p, rnorm(n)))
+return( eigen(cor(noise))$values )
+}
+
+set.seed(42)
+evalues_noise <- replicate(100, sim_noise_ev(dim(data)[1], dim(data)[2]))
+```
+
+```{r}
+# draw
+evalues_mean <- apply(evalues_noise, 1, mean)
+pca <- prcomp(data, scale. = TRUE)
+screeplot(pca, type="lines",col="brown3",main = "PCA variances",lwd=1.5,ylim = c(0, 10))
+lines(evalues_mean,col="slateblue4" , type="b",lwd=1.5)
+abline(h=1, lty="dotted")
+legend("topright", c("Real data","Simulated Noise"),lty=c(1,1),col=c("brown3","slateblue4"))
+```
+
+
+### (b) How many dimensions would you retain if we used Parallel Analysis?
+
+```{r}
+eigenvalues <- eigen(cor(data))$values
+sprintf("We should retain %d dimensions ", length(eigenvalues[eigenvalues>1]))
+```
+
+## Q2 Examine factor loadings
+
+```{r}
+dec_pca3_orig <- principal(data,nfactors = 3,rotate="none",scores = TRUE)
+dec_pca3_orig
+```
+
+
+### (a) Looking at the loadings of the first 3 principal components, to which components does each item seem to best belong?
+
+```{r}
+dec_pca3_orig[["loadings"]]
+```
+
++ It seems all components belongs to PC1.  
++ Take the threshold of loading to 0.5, `Q4`,`Q12`,`Q17`belongs to PC2.
++ Take the threshold of loading to 0.5, `Q5`,`Q10`belongs to PC3.  
+
+### (b) How much of the total variance of the security dataset do the first 3 PCs capture?
+
+**ANSWER:** $67%$ of variance captured from the first 3 PCs.
+
+### (c) Looking at commonality and uniqueness, which items are less than adequately explained by the first 3 principal components?
+
+**ANSWER:** According to the table, `Q2` is the least adequately explained component. The commonality of `Q2` is $1.035995$ and  uniqueness is $0.5394567$
+
+### (d) How many measurement items share similar loadings between 2 or more components?
+
+```{r}
+fviz_pca_biplot(pca, invisible ="ind")+
+ theme_minimal()
+```
+**ANSWER:** `Q1`,`Q4`,`Q12` share similar loadings between 2 or more components.
+
+### (e) Can you distinguish a ‘meaning’ behind the first principal component from the items that load best upon it? (see the wording of the questions of those items)
+
+**ANSWER:** Since the highest component of `PC1` is `Q1`,`Q14`, `Q18`, let's take a look at these question:
+
++ `Q1`:I am convinced that this site respects the confidentiality of the transactions received from me.  
++ `Q14`:This site devotes time and effort to verify the accuracy of the information in transit.  
++ `Q18`:This site uses some security controls for the confidentiality of the transactions received from me.
+
+I would give a conclusion about the users care about how website protect the security.
+
+
+## Q3 rotate the our principal component axes 
+
+```{r}
+dec_pca3_rot <- principal(data,nfactors = 3,rotate="varimax",scores = TRUE)
+dec_pca3_rot
+```
+
+
+
+### (a) Individually, does each rotated component (RC) explain the same, or different, amount of variance than the corresponding principal components (PCs)?
+
+**ANSWER:** The variance of RCs are **different** to original PCs.
+
+### (b) Together, do the three rotated components explain the same, more, or less cumulative variance as the three principal components combined?
+
+**ANSWER:** The cumulative variance 3 RCs is same to 3 PCs, which is 67%.
+
+### (c) Looking back at the items that shared similar loadings with multiple principal components (#2d), do those items have more clearly differentiated loadings among rotated components?
+
+**ANSWER:** According to the components of `RC1`, those items have more clearly differentiated loadings now.
+
+### (d) Can you now interpret the “meaning” of the 3 rotated components from the items that load best upon each of them? (see the wording of the questions of those items)
+
+**ANSWER:** Since the highest component of `RC1` is `Q7`,`Q9`,`Q11`, `Q14`, `Q16`, let's take a look at these question:
+
++ `Q7`:This site never sells my personal information in their computer databases to other companies   
++ `Q9`:I can remove my personal information from this site when I want to.  
++ `Q11`:This site devotes time and effort to preventing unauthorized access to my personal information.  
++ `Q14`:This site devotes time and effort to verify the accuracy of the information in transit.    
++ `Q16`:Databases that contain my personal information are protected from unauthorized access 
+
+I would give a conclusion about the users care about the **personal information** should be protected well.
+
+
+### (e) If we reduced the number of extracted and rotated components to 2, does the meaning of our rotated components change?
+
+```{r}
+dec_pca2_rot <- principal(data,nfactors = 2,rotate="varimax",scores = TRUE)
+dec_pca2_rot
+```
+
+**ANSWER:**  Yes, the components in RC1 is acturally changed.
+
+
+## (ungraded) Looking back at all our results and analyses of this dataset (from this week and previous), how many components (1-3) do you believe we should extract and analyze to understand the security dataset? Feel free to suggest different answers for different purposes.
+
+**ANSWER:** According to the cumulative variance explained, I think 3 components is better to understand the security dataset.
+
+
+## Reference Link
++ [Colors code in R](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf)
++ [screeplot: Draw a SCREE plot, showing the distribution of explained...](https://rdrr.io/bioc/PCAtools/man/screeplot.html)
++ [fviz_pca: Quick Principal Component Analysis data visualization - R software and data mining](http://www.sthda.com/english/wiki/fviz-pca-quick-principal-component-analysis-data-visualization-r-software-and-data-mining#fviz_pca_ind-graph-of-individuals)
+
